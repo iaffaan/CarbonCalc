@@ -1,0 +1,8 @@
+# Ignore sensitive config files
+config.js
+**/config.js
+.env
+**/.env
+
+# Ignore node modules if you use them later
+node_modules/

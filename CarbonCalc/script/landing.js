@@ -27,7 +27,6 @@ if (landingSendBtn && landingUserInput && landingChatWindow) {
     // Show "typing..." message
     const thinkingEl = document.createElement('div');
     thinkingEl.classList.add('chat-msg');
-    thinkingEl.setAttribute('id', 'botThinking');
     thinkingEl.innerHTML = `<strong>EcoBot:</strong> <em>Thinking...</em>`;
     landingChatWindow.appendChild(thinkingEl);
     landingChatWindow.scrollTop = landingChatWindow.scrollHeight;
@@ -39,7 +38,7 @@ Give a clear, short, beginner-friendly answer about carbon footprint or the clim
     `;
 
     try {
-      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=Your_API_KEY_HERE', {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -47,20 +46,28 @@ Give a clear, short, beginner-friendly answer about carbon footprint or the clim
         })
       });
 
-      
-      const data = await res.json();
-      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Hmm, I couldn’t answer that. Try asking differently!";
-
-      const botThinkingEl = document.getElementById('botThinking');
-      if (botThinkingEl) {
-        botThinkingEl.innerHTML = `<strong>EcoBot:</strong> ${reply}`;
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("API Error data:", errorData);
+        throw new Error(errorData?.error?.message || "Failed to fetch from Gemini API");
       }
+
+      const data = await res.json();
+      let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Hmm, I couldn't answer that. Try asking differently!";
+
+      if (typeof marked !== 'undefined') {
+        reply = `<div style="display:inline-block; margin-top:5px; width:100%; line-height:1.4;">${marked.parse(reply)}</div>`;
+      } else {
+        reply = reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+      }
+
+      thinkingEl.innerHTML = `<strong>EcoBot:</strong> ${reply}`;
 
 
 
     } catch (err) {
       console.error("Landing Chatbot Error:", err);
-      appendLandingMessage('EcoBot', "Oops! Something went wrong.");
+      thinkingEl.innerHTML = `<strong>EcoBot:</strong> Oops! Something went wrong: ${err.message}`;
     }
 
     landingUserInput.value = '';
@@ -68,22 +75,12 @@ Give a clear, short, beginner-friendly answer about carbon footprint or the clim
     hideSampleQuestions();
   });
 
-  
+
 
   landingUserInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') landingSendBtn.click();
   });
 }
-async function fetchGeminiOutput() {
-  // Replace with your actual API call
-  const response = await fetch('/your-gemini-api-endpoint');
-  const data = await response.json();
-  const markdownText = data.output; // Assuming the output is in a field called 'output'
-  const htmlOutput = marked.parse(markdownText);
-  document.getElementById('geminiOutput').innerHTML = htmlOutput;
-}
-
-fetchGeminiOutput();
 
 
 function appendLandingMessage(sender, message) {

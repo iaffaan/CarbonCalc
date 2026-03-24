@@ -357,8 +357,7 @@ BEHAVIORS TO AVOID:
     negativeTipsListEl.innerHTML = '<li>Loading warnings...</li>';
 
     try {
-        const API_KEY = "YOUR_API_KEY"; // Replace with your actual API key
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=YOUR_API_KEY_HERE`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`, {
            
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -592,9 +591,7 @@ User Question: "${question}"
 
 
     try {
-         // --- IMPORTANT: Replace "your_APi" with your actual Gemini API Key ---
-        const API_KEY = "YOUR_API_KEY_HERE";
-        if (API_KEY === "YOUR_API_KEY") {
+        if (!API_KEY || API_KEY === "YOUR_API_KEY") {
              updateChatMessage(thinkingId, 'EcoBot', 'API Key not configured for chatbot.');
              console.warn("Gemini API Key not set for chatbot!");
              userInput.disabled = false;
@@ -603,7 +600,7 @@ User Question: "${question}"
              return;
         }
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=API_KEY_HERE`, { // Using 1.5 Flash
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`, { // Using 1.5 Flash
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -633,6 +630,11 @@ User Question: "${question}"
 
         if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
              reply = data.candidates[0].content.parts[0].text;
+             if (typeof marked !== 'undefined') {
+                 reply = `<div style="display:inline-block; margin-top:5px; width:100%; line-height:1.4;">${marked.parse(reply)}</div>`;
+             } else {
+                 reply = reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'); // Fallback
+             }
         } else {
              console.warn("Gemini chatbot response issue:", data);
              let reason = "No content received.";
@@ -649,7 +651,7 @@ User Question: "${question}"
 
     } catch (err) {
         console.error("Chatbot fetch error:", err);
-        updateChatMessage(thinkingId, 'EcoBot', 'Oops! Something went wrong connecting to the AI. Please try again later.');
+        updateChatMessage(thinkingId, 'EcoBot', `Oops! Something went wrong: ${err.message}`);
     } finally {
         // Re-enable input fields regardless of success or failure
         userInput.disabled = false;
